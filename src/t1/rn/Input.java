@@ -80,9 +80,9 @@ public class Input {
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
                 sbResult.append(matrix[i][j]);
-                sbResult.append("  ");
+                if(j != 9) sbResult.append(" ");
             }
-            sbResult.append("\n");
+            if(i!=9)sbResult.append("\n");
         }
 
         return sbResult.toString();

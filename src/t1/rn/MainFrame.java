@@ -13,6 +13,7 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Scanner;
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -33,6 +34,10 @@ public class MainFrame extends JPanel{
     JLabel currentNumber;
     JLabel aux;
     JButton button;
+    boolean debugMode = false;
+    boolean recoverKnowledge = true;
+    boolean writeKnowledge = true;
+    boolean teachNN = false;
 
     public void showMainFrame() {
         j = new JFrame("ICMC-USP - T1 - Neural Networks - Adriller Ferreira");
@@ -45,7 +50,8 @@ public class MainFrame extends JPanel{
         j.add(image, BorderLayout.CENTER);
 
         error = new JLabel("Error rate: ");
-        currentNumber = new JLabel();
+        currentNumber = new JLabel("type your number in the matrix below, replacing any 0 (white) for 1 (black)");
+        
         j.add(error, BorderLayout.PAGE_END);
         j.add(currentNumber, BorderLayout.PAGE_START);
         
@@ -55,8 +61,7 @@ public class MainFrame extends JPanel{
         
         button = new JButton("Guess number!");
         j.add(button, BorderLayout.LINE_END);
-        int[] inputs; //represents the vector input
-        int errors = 0, count = 0, hits = 0; //total errors
+
         j.setVisible(true);
 
         //sizes of vectors
@@ -67,39 +72,17 @@ public class MainFrame extends JPanel{
         NeuralNetwork NN = new NeuralNetwork(sizeI, sizeH, sizeO);
         Input in = new Input();
         int number = 0;
-        NN.readWeights();
+        if(recoverKnowledge) NN.readWeights();
 
+        int[][] matrix = in.readInputMatrix("start.txt");
+        image.setText(in.toString(matrix));
+        transformInImage(in.invertMatrix(matrix));
         button.addActionListener(testNN(currentNumber, error, image, in, NN));
-
-        /*
-        for (int time = 0; time < 1000; time++) {
-            for (int i = 0; i < 10; i++) {
-                int[][] matrix = in.readInputMatrix("number" + Integer.toString(i) + ".txt");
-                inputs = in.getInputvector(matrix);
-                currentNumber.setText("Current Number = " + Integer.toString(i));
-                image.setText(in.toString(matrix));
-                boolean keepInput = true;
-                count++;
-                NN.setInputs(inputs);
-                NN.setDesired(i);
-                NN.calcHiddenLayer();
-                NN.calcOutputLayer();
-                int awnser = NN.awnser();
-                if (awnser != i) {
-                    errors++;
-                    NN.rectifyWeigths2();
-                    NN.rectifyWeigths1();
-                } else {
-                    hits++;
-                    System.out.println("correct for " + i);
-                }
-                currentNumber.setText("   Current Number = " + Integer.toString(i));
-                error.setText("      Errors: " + Double.toString(errors) + "      Hits: " + Double.toString(hits) + "        Awnser for currently input: : " + Integer.toString(awnser));
-            }
-        }
-        error.setText("    Errors: " + Double.toString(errors) + "   Hits: " + Double.toString(hits) + "    Error Rate: " + (double)errors/count);
-        //NN.saveWeights();
-         */
+        
+        if(teachNN) teachNN(in, NN);
+        
+        
+         
     }
 
     public ActionListener testNN(JLabel currentNumber, JLabel error, JTextArea image, Input in, NeuralNetwork NN) {
@@ -116,7 +99,7 @@ public class MainFrame extends JPanel{
                 NN.calcOutputLayer();
                 int awnser = NN.awnser();
                 currentNumber.setText("");
-                error.setText("                 Awnser for currently input: : " + Integer.toString(awnser));
+                error.setText("                 Answer for currently input: : " + Integer.toString(awnser));
             }
         };
         return temp;
@@ -152,6 +135,41 @@ public class MainFrame extends JPanel{
         } catch (Exception e) {
             System.out.println("impossible turn into a image");
         }
+    }
+    
+    public void teachNN(Input in, NeuralNetwork NN){
+        int[] inputs; //represents the vector input
+        int errors = 0, count = 0, hits = 0; //total errors
+        Scanner sc = new Scanner(System.in);
+        for (int time = 0; time < 600; time++) {
+            for (int i = 0; i < 30; i++) {
+                int[][] matrix = in.readInputMatrix("number" + Integer.toString(i) + ".txt");
+                inputs = in.getInputvector(matrix);
+                currentNumber.setText("Current Number = " + Integer.toString(i%10));
+                image.setText(in.toString(matrix));
+                transformInImage(in.invertMatrix(matrix));
+                boolean keepInput = true;
+                count++;
+                NN.setInputs(inputs);
+                NN.setDesired(i%10);
+                NN.calcHiddenLayer();
+                NN.calcOutputLayer();
+                int awnser = NN.awnser();
+                if (awnser != i%10) {
+                    errors++;
+                    NN.rectifyWeigths2();
+                    NN.rectifyWeigths1();
+                } else {
+                    hits++;
+                    System.out.println("correct for " + i%10);
+                }
+                currentNumber.setText("   Current Number = " + Integer.toString(i%10));
+                error.setText("      Errors: " + Double.toString(errors) + "      Hits: " + Double.toString(hits) + "        Awnser for currently input: : " + Integer.toString(awnser));
+                if(time == 0 && debugMode) {System.out.println("press anything to continue"); sc.next();}
+            }
+        }
+        error.setText("    Errors: " + Double.toString(errors) + "   Hits: " + Double.toString(hits) + "    Error Rate: " + (double)errors/count);
+        if(writeKnowledge) NN.saveWeights();
     }
 
     
